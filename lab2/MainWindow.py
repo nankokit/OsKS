@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         # Подключение сигналов
         self.sending_combo.currentTextChanged.connect(self.change_sending_port)
         self.receiving_combo.currentTextChanged.connect(self.change_received_port)
-        self.input_text.realTextEdited.connect(self.send_byte)
+        self.input_text.realTextEdited.connect(self.send_package)
 
         # Таймер для обновления состояния
         self.timer = QTimer(self)
@@ -248,7 +248,7 @@ class MainWindow(QMainWindow):
             self.input_text.setEnabled(False)
             self.input_text.set_text("Select port")
 
-    def send_byte(self):
+    def send_package(self):
         if self.write_port.is_open and self.input_text.toPlainText():
             char = self.input_text.toPlainText()[-1]
             try:
