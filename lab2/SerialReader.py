@@ -3,6 +3,7 @@ import time
 import serial
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
+import BitStuffing
 import PortManager
 
 
@@ -23,13 +24,11 @@ class SerialReader(QRunnable):
     @Slot()
     def run(self):
         while self.running:
-            byte = PortManager.PortManager.get_package(self.port)
-            if byte:
+            byte = PortManager.get_package(self.port)
+            if byte and byte != "":
                 self.package += byte
             elif len(self.package) != 0:
-                self.signal.byteReaded.emit(
-                    PortManager.PortManager.de_bit_stuffing(self.package)
-                )
+                self.signal.byteReaded.emit(BitStuffing.de_bit_stuffing(self.package))
                 self.package = ""
             time.sleep(0.01)
 

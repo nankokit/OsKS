@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import BitStuffing
 import PortManager
 import SerialReader
 from CustomTextEdit import AppendOnlyTextEdit
@@ -33,6 +34,7 @@ class MainWindow(QMainWindow):
         self.thread_pool = QThreadPool()
         self.port_reader = SerialReader.SerialReader(self.read_port)
         self.bytes_sended = 0
+        self.data = ""
 
         # Установка основного виджета
         central_widget = QWidget()
@@ -120,7 +122,7 @@ class MainWindow(QMainWindow):
         self.update_ports()
 
     def set_box_list(self, comboBox: QComboBox, without: list):
-        ports_list = PortManager.PortManager.get_all_ports()
+        ports_list = PortManager.get_all_ports()
         text = comboBox.currentText()
         if text != "":
             ports_list.append(text)
@@ -140,7 +142,6 @@ class MainWindow(QMainWindow):
 
     def update_ports(self):
         text_write = self.receiving_combo.currentText()
-        text_read = self.sending_combo.currentText()
 
         # Убираем выбранный и следующий порты из списка получения
         self.set_box_list(
@@ -190,7 +191,7 @@ class MainWindow(QMainWindow):
 
         self.bytes_sended = 0
 
-        if PortManager.PortManager.connect_to_port(port).port is None:
+        if PortManager.connect_to_port(port).port is None:
             self.show_error_message(
                 "The port is already occupied, the list of ports has been updated"
             )
@@ -200,7 +201,7 @@ class MainWindow(QMainWindow):
             self.receiving_combo.blockSignals(was_blocked)
             return
 
-        self.read_port = PortManager.PortManager.connect_to_port(port)
+        self.read_port = PortManager.connect_to_port(port)
         self.port_reader = SerialReader.SerialReader(self.read_port)
         self.port_reader.signal.byteReaded.connect(self.write_text)
         self.thread_pool.start(self.port_reader)
@@ -216,7 +217,7 @@ class MainWindow(QMainWindow):
         self.clear_input()
         self.write_port.close()
 
-        if PortManager.PortManager.connect_to_port(port).port is None:
+        if PortManager.connect_to_port(port).port is None:
             self.show_error_message(
                 "The port is already occupied, the list of ports has been updated"
             )
@@ -230,7 +231,7 @@ class MainWindow(QMainWindow):
             return
 
         self.input_text.setEnabled(True)
-        self.write_port = PortManager.PortManager.connect_to_port(port)
+        self.write_port = PortManager.connect_to_port(port)
         self.write_port.write_timeout = 0.1
 
         self.log(f"Connected to sending port: {port}")
@@ -250,15 +251,25 @@ class MainWindow(QMainWindow):
 
     def send_package(self):
         if self.write_port.is_open and self.input_text.toPlainText():
-            char = self.input_text.toPlainText()[-1]
-            try:
-                PortManager.PortManager.send_byte(self.write_port, char)
-                self.bytes_sended += 1
-                self.log(f"Sent: {char}")
-                self.update_status()
-            except Exception as e:
-                QMessageBox.warning(self, "Error", "Failed: Port is not listening.")
-                self.clear_input()  # Очистка поля ввода при ошибке
+            self.data += self.input_text.toPlainText()[-1]
+            if len(self.data) == 5:
+                try:
+                    package = BitStuffing.to_package(
+                        data=self.data, port=self.write_port.port
+                    )
+                    package = BitStuffing.bit_stuffing(package)
+                    PortManager.send_package(self.write_port, package)
+                    self.bytes_sended += len(
+                        BitStuffing.bit_stuffing(
+                            BitStuffing.to_package(self.data, self.write_port.port)
+                        ).encode()
+                    )
+                    self.log(f"Sent: {package}")
+                    self.update_status()
+                    self.data = ""
+                except Exception as e:
+                    QMessageBox.warning(self, "Error", "Failed: Port is not listening.")
+                    self.clear_input()  # Очистка поля ввода при ошибке
 
     def write_text(self, byte: str):
         self.output_text.insertPlainText(byte)
