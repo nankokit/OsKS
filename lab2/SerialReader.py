@@ -24,11 +24,13 @@ class SerialReader(QRunnable):
     @Slot()
     def run(self):
         while self.running:
-            byte = PortManager.get_package(self.port)
-            if byte and byte != "":
-                self.package += byte
+            data = PortManager.get_package(self.port)
+            if data and data != "":
+                self.package += data
             elif len(self.package) != 0:
-                self.signal.byteReaded.emit(BitStuffing.de_bit_stuffing(self.package))
+                self.signal.byteReaded.emit(
+                    BitStuffing.from_package(BitStuffing.de_bit_stuffing(self.package))
+                )
                 self.package = ""
             time.sleep(0.01)
 
