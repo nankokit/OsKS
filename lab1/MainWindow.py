@@ -1,9 +1,6 @@
 import sys
 
-import PortManager
 import serial
-import SerialReader
-from CustomTextEdit import AppendOnlyTextEdit
 from PySide6.QtCore import Qt, QThreadPool, QTimer
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
@@ -18,6 +15,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+import PortManager
+import SerialReader
+from CustomTextEdit import AppendOnlyTextEdit
 
 
 class MainWindow(QMainWindow):
@@ -193,7 +194,7 @@ class MainWindow(QMainWindow):
             self.show_error_message(
                 "The port is already occupied, the list of ports has been updated"
             )
-            was_blocked = self.sending_combo.blockSignals(True)
+            was_blocked = self.receiving_combo.blockSignals(True)
             self.receiving_combo.setCurrentIndex(-1)
             self.receiving_combo.blockSignals(was_blocked)
             self.update_ports()
@@ -219,7 +220,7 @@ class MainWindow(QMainWindow):
             self.show_error_message(
                 "The port is already occupied, the list of ports has been updated"
             )
-            was_blocked = self.receiving_combo.blockSignals(True)
+            was_blocked = self.sending_combo.blockSignals(True)
             self.sending_combo.setCurrentIndex(-1)
             self.sending_combo.blockSignals(was_blocked)
             self.input_text.setEnabled(False)
