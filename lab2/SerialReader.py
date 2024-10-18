@@ -29,7 +29,7 @@ class SerialReader(QRunnable):
                 self.package += data
             elif len(self.package) != 0:
                 self.signal.byteReaded.emit(
-                    BitStuffing.from_package(BitStuffing.de_bit_stuffing(self.package))
+                    BitStuffing.depackaging(BitStuffing.de_bit_stuffing(self.package))
                 )
                 self.package = ""
             time.sleep(0.01)
