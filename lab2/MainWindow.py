@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self.port_reader = SerialReader.SerialReader(self.read_port)
         self.bytes_sended = 0
         self.data = ""
+        self.last_package = ""
 
         # Установка основного виджета
         central_widget = QWidget()
@@ -254,17 +255,18 @@ class MainWindow(QMainWindow):
             self.data += self.input_text.toPlainText()[-1]
             if len(self.data) == 5:
                 try:
-                    package = BitStuffing.to_package(
+                    package = BitStuffing.packaging(
                         data=self.data, port=self.write_port.port
                     )
                     package = BitStuffing.bit_stuffing(package)
                     PortManager.send_package(self.write_port, package)
                     self.bytes_sended += len(
                         BitStuffing.bit_stuffing(
-                            BitStuffing.to_package(self.data, self.write_port.port)
+                            BitStuffing.packaging(self.data, self.write_port.port)
                         ).encode()
                     )
                     self.log(f"Sent: {package}")
+                    self.last_package = package
                     self.update_status()
                     self.data = ""
                 except Exception as e:
@@ -291,6 +293,31 @@ class MainWindow(QMainWindow):
     def log(self, message):
         self.debug_text.appendPlainText(message)
 
+    def highlight_stuffed_bits(self, package: str):
+        str = ""
+        is_found = False
+        highlighted_package = package[:8]
+        for bit in package[8:]:
+            str += bit
+            if str == "100001":
+                highlighted_package += str
+                highlighted_package += "["
+                is_found = True
+                str = ""
+            elif len(str) == 6:
+                highlighted_package += str[0]
+                str = str[1:]
+            else:
+                if is_found:
+                    highlighted_package += bit
+                    highlighted_package += "]"
+                    is_found = False
+
+        if str != "":
+            highlighted_package += str
+
+        return highlighted_package
+
     def update_status(self):
         # Обновление статуса
         sending_port_info = "Sending port: not selected"
@@ -313,11 +340,12 @@ class MainWindow(QMainWindow):
                 f"parity = {self.read_port.parity}, "
                 f"stopbits = {self.read_port.stopbits})"
             )
-
+        highlighted_output = self.highlight_stuffed_bits(self.last_package)
         self.status_text.clear()
         self.status_text.appendPlainText(sending_port_info)
         self.status_text.appendPlainText(receiving_port_info)
         self.status_text.appendPlainText(f"Bytes transmitted = {self.bytes_sended}\n")
+        self.status_text.appendPlainText(f"Last package: {highlighted_output}\n")
 
     def closeEvent(self, event):
         """Закрытие программы и закрытие портов."""
