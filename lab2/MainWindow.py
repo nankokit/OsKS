@@ -312,6 +312,7 @@ class MainWindow(QMainWindow):
                     highlighted_package += bit
                     highlighted_package += "]"
                     is_found = False
+                    str = ""
 
         if str != "":
             highlighted_package += str
