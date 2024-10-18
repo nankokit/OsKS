@@ -290,7 +290,8 @@ class MainWindow(QMainWindow):
         self.output_text.clear()
         self.log("Cleared receiving section")
 
-    def log(self, message):
+    def log(self, message: str):
+        message = message.replace("\n", "\\n")
         self.debug_text.appendPlainText(message)
 
     def highlight_stuffed_bits(self, package: str):
@@ -316,6 +317,8 @@ class MainWindow(QMainWindow):
 
         if str != "":
             highlighted_package += str
+
+        highlighted_package = highlighted_package.replace("\n", "\\n")
 
         return highlighted_package
 
