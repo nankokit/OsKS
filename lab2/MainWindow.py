@@ -300,12 +300,12 @@ class MainWindow(QMainWindow):
         highlighted_package = package[:8]
         for bit in package[8:]:
             str += bit
-            if str == "100001":
+            if str == "1000010":
                 highlighted_package += str
                 highlighted_package += "["
                 is_found = True
                 str = ""
-            elif len(str) == 6:
+            elif len(str) == 7:
                 highlighted_package += str[0]
                 str = str[1:]
             else:

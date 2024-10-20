@@ -17,11 +17,11 @@ def bit_stuffing(package: str):
     stuffed_package = package[:8]
     for bit in package[8:]:
         str += bit
-        if str == "100001":
-            str += "1"
+        if str == "1000010":
+            str += "0"
             stuffed_package += str
             str = ""
-        if len(str) == 6:
+        if len(str) == 7:
             stuffed_package += str[0]
             str = str[1:]
     if str != "":
@@ -34,10 +34,10 @@ def de_bit_stuffing(package: str):
     destuffed_package = package[:8]
     for bit in package[8:]:
         str += bit
-        if str[:-1] == "100001":
+        if str[:-1] == "1000010":
             destuffed_package += str[:-1]
             str = ""
-        if len(str) == 7:
+        if len(str) == 8:
             destuffed_package += str[0]
             str = str[1:]
     if str != "":
