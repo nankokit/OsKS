@@ -27,12 +27,11 @@ class SerialReader(QRunnable):
             package = PortManager.get_package(self.port)
             if package and package != "":
                 package = BitStuffing.de_bit_stuffing(package)
-                package = BitStuffing.depackaging(package)
-                package = HammingCode.distort_data(package)
-                package = HammingCode.check_and_correct(
-                    package, HammingCode.fcs_from_package(package)
-                )
-                self.signal.byteReaded.emit(package)
+                data = BitStuffing.depackaging(package)
+                data = HammingCode.introduce_random_error(data)
+                fcs = HammingCode.get_fcs(package)
+                data = HammingCode.validate_and_correct_data(data, fcs)
+                self.signal.byteReaded.emit(data)
             time.sleep(0.01)
 
     def stop(self):

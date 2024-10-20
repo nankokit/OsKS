@@ -3,7 +3,7 @@ import HammingCode
 
 
 def packaging(data: str, port: str):
-    FCS = HammingCode.hamming_code(data)
+    FCS = HammingCode.generate_hamming_code(data)
     source_address = bin(int(port[-1:]))[2:]
     while len(source_address) < 4:
         source_address = "0" + source_address
@@ -11,7 +11,7 @@ def packaging(data: str, port: str):
 
 
 def depackaging(package: str):
-    return package[16 : -HammingCode.get_fcs_size()]
+    return package[16 : -HammingCode.fcs_size()]
 
 
 def bit_stuffing(package: str):

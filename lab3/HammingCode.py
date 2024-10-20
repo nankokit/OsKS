@@ -4,46 +4,51 @@ from math import ceil, log2
 import constants
 
 
-def get_fcs_size():
+def fcs_size():
     return ceil(log2(constants.DATA_SIZE + 1))
 
 
-def fcs_from_package(package: str):
-    return package[-get_fcs_size() :]
+def get_fcs(package: str):
+    return package[-fcs_size() :]
 
 
-def hamming_code(data: str):
+def generate_hamming_code(data: str):
     fcs = ""
-    fcs_size = get_fcs_size()
+    fcs_size = fcs_size()
     for i in range(0, fcs_size):
-        sum = 0
+        parity_sum = 0
         for j in range(2**i, len(data) + 1, (2**i) * 2):
-            bits = data[j - 1 : j + (2**i) - 1]
-            for bit in bits:
-                if bit != "\n":
-                    sum ^= int(bit)
-        fcs += str(sum)
-    return fcs
+            segment = data[j - 1 : j + (2**i) - 1]
+            parity_sum ^= sum(int(bit) for bit in segment if bit != "\n")
+        fcs += str(parity_sum)
+    return "".join(fcs)
 
 
-def check_and_correct(data: str, code: str):
-    code_now = hamming_code(data)
-    if code == code_now:
-        return data
-    pos = 0
-    for i in range(0, get_fcs_size()):
-        if code[i] != code_now[i]:
-            pos += 2**i
-    data_list = list(data)
-    data_list[pos - 1] = "0" if data_list[pos - 1] == "1" else "1"
+def validate_and_correct_data(received_data: str, received_code: str):
+    generated_code = generate_hamming_code(received_data)
+    if received_code == generated_code:
+        return received_data
+
+    error_position = 0
+
+    for i in range(0, fcs_size()):
+        if received_code[i] != generated_code[i]:
+            error_position += 2**i
+
+    data_list = list(received_data)
+    if 0 < error_position <= len(data_list):
+        data_list[error_position - 1] = (
+            "1" if data_list[error_position - 1] == "0" else "0"
+        )
     return "".join(data_list)
 
 
-def distort_data(data: str):
+def introduce_random_error(data: str):
     data_list = list(data)
-    p = random.randint(1, 10)
-    if p <= 3:
-        pos = random.randint(0, len(data) - 1)
-        if data_list[pos] != "\n":
-            data_list[pos] = "0" if data_list[pos] == "1" else "1"
+    error_chance = random.randint(1, 10)
+
+    if error_chance <= 3:
+        error_position = random.randint(0, len(data) - 1)
+        if data_list[error_position] != "\n":
+            data_list[error_position] = "1" if data_list[error_position] == "0" else "0"
     return "".join(data_list)

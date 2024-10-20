@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 import BitStuffing
 import constants
+import HammingCode
 import PortManager
 import SerialReader
 from CustomTextEdit import AppendOnlyTextEdit
@@ -26,7 +27,7 @@ from CustomTextEdit import AppendOnlyTextEdit
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("COM-port communication 2")
+        self.setWindowTitle("COM-port communication 3")
         self.setGeometry(100, 100, 800, 500)
 
         # Инициализация логики последовательных портов
@@ -254,18 +255,14 @@ class MainWindow(QMainWindow):
     def send_package(self):
         if self.write_port.is_open and self.input_text.toPlainText():
             self.data += self.input_text.toPlainText()[-1]
-            if len(self.data) == 5:
+            if len(self.data) == constants.DATA_SIZE:
                 try:
                     package = BitStuffing.packaging(
                         data=self.data, port=self.write_port.port
                     )
                     package = BitStuffing.bit_stuffing(package)
                     PortManager.send_package(self.write_port, package)
-                    self.bytes_sended += len(
-                        BitStuffing.bit_stuffing(
-                            BitStuffing.packaging(self.data, self.write_port.port)
-                        ).encode()
-                    )
+                    self.bytes_sended += len(package.encode())
                     self.log(f"Sent: {package}")
                     self.last_package = package
                     self.update_status()
@@ -323,8 +320,14 @@ class MainWindow(QMainWindow):
 
         return highlighted_package
 
+    def highlight_FCS(self, package: str):
+        return (
+            package[: -HammingCode.fcs_size()]
+            + " "
+            + package[-HammingCode.fcs_size() :]
+        ).replace("\n", "\\n")
+
     def update_status(self):
-        # Обновление статуса
         sending_port_info = "Sending port: not selected"
         receiving_port_info = "Receiving port: not selected"
 
@@ -345,7 +348,7 @@ class MainWindow(QMainWindow):
                 f"parity = {self.read_port.parity}, "
                 f"stopbits = {self.read_port.stopbits})"
             )
-        highlighted_output = self.highlight_stuffed_bits(self.last_package)
+        highlighted_output = self.highlight_FCS(self.last_package)
         self.status_text.clear()
         self.status_text.appendPlainText(sending_port_info)
         self.status_text.appendPlainText(receiving_port_info)
