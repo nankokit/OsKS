@@ -14,12 +14,13 @@ def get_fcs(package: str):
 
 def generate_hamming_code(data: str):
     fcs = ""
-    fcs_size = fcs_size()
-    for i in range(0, fcs_size):
+    for i in range(0, fcs_size()):
         parity_sum = 0
         for j in range(2**i, len(data) + 1, (2**i) * 2):
             segment = data[j - 1 : j + (2**i) - 1]
-            parity_sum ^= sum(int(bit) for bit in segment if bit != "\n")
+            for bit in segment:
+                if bit != "\n":
+                    parity_sum ^= int(bit)
         fcs += str(parity_sum)
     return "".join(fcs)
 
@@ -36,10 +37,8 @@ def validate_and_correct_data(received_data: str, received_code: str):
             error_position += 2**i
 
     data_list = list(received_data)
-    if 0 < error_position <= len(data_list):
-        data_list[error_position - 1] = (
-            "1" if data_list[error_position - 1] == "0" else "0"
-        )
+
+    data_list[error_position - 1] = "1" if data_list[error_position - 1] == "0" else "0"
     return "".join(data_list)
 
 
