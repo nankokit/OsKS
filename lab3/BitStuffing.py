@@ -3,11 +3,11 @@ import HammingCode
 
 
 def packaging(data: str, port: str):
-    FCS = HammingCode.generate_hamming_code(data)
+    fcs = HammingCode.generate_hamming_code(data)
     source_address = bin(int(port[-1:]))[2:]
     while len(source_address) < 4:
         source_address = "0" + source_address
-    return constants.FLAG + constants.DEST_ADDR + source_address + data + FCS
+    return constants.FLAG + constants.DEST_ADDR + source_address + data + fcs
 
 
 def depackaging(package: str):
