@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 import BitStuffing
 import HammingCode
 import PortManager
+import constants
 
 
 class ReaderSignal(QObject):
@@ -23,15 +24,43 @@ class SerialReader(QRunnable):
 
     @Slot()
     def run(self):
+        package = ""
+        flag = False
         while self.running:
-            package = PortManager.get_package(self.port)
-            if package and package != "":
-                package = BitStuffing.de_bit_stuffing(package)
-                data = BitStuffing.depackaging(package)
-                data = HammingCode.introduce_random_error(data)
-                fcs = HammingCode.get_fcs(package)
-                data = HammingCode.validate_and_correct_data(data, fcs)
-                self.signal.byteReaded.emit(data)
+            data = PortManager.get_byte(self.port)
+            if data == "j":
+                package = package[:-1]
+                print("readed:" + package)
+            elif data:
+                package += data
+                print("readed:" + package)
+                if not flag:
+                    if package == constants.FLAG:
+                        flag = True
+                elif flag:
+                    if (
+                        package[len(constants.FLAG) :][-len(constants.FLAG) :]
+                        == constants.FLAG
+                    ):
+                        package = BitStuffing.de_bit_stuffing(package)
+                        if PortManager.full_packet(package):
+                            data = BitStuffing.depackaging(package)
+                            data = HammingCode.introduce_random_error(data)
+                            fcs = HammingCode.get_fcs(package)
+                            data = HammingCode.validate_and_correct_data(data, fcs)
+                            self.signal.byteReaded.emit(data)
+                        package = constants.FLAG
+            else:
+                if flag:
+                    package = BitStuffing.de_bit_stuffing(package)
+                    if PortManager.full_packet(package):
+                        data = BitStuffing.depackaging(package)
+                        data = HammingCode.introduce_random_error(data)
+                        fcs = HammingCode.get_fcs(package)
+                        data = HammingCode.validate_and_correct_data(data, fcs)
+                    self.signal.byteReaded.emit(data)
+                    flag = False
+                    package = ""
             time.sleep(0.01)
 
     def stop(self):

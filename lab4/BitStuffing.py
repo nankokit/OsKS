@@ -45,3 +45,19 @@ def de_bit_stuffing(package: str):
     if str != "":
         destuffed_package += str
     return destuffed_package
+
+
+def get_stuffed_bits(packet: str):
+    str = ""
+    stuffed_bits = "0" * 8
+    for bit in packet[8:]:
+        str += bit
+        if str[:-1] == constants.FLAG[:-1]:
+            stuffed_bits += "0" * 7 + "1"
+            str = ""
+        if len(str) == 7:
+            stuffed_bits += "0"
+            str = str[1:]
+    if str != "":
+        stuffed_bits += "0" * len(str)
+    return stuffed_bits
