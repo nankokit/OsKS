@@ -42,7 +42,9 @@ class SerialReader(QRunnable):
                         package[len(constants.FLAG) :][-len(constants.FLAG) :]
                         == constants.FLAG
                     ):
-                        package = BitStuffing.de_bit_stuffing(package)
+                        package = BitStuffing.de_bit_stuffing(
+                            package[: -len(constants.FLAG)]
+                        )
                         if PortManager.full_packet(package):
                             data = BitStuffing.depackaging(package)
                             data = HammingCode.introduce_random_error(data)
@@ -58,7 +60,7 @@ class SerialReader(QRunnable):
                         data = HammingCode.introduce_random_error(data)
                         fcs = HammingCode.get_fcs(package)
                         data = HammingCode.validate_and_correct_data(data, fcs)
-                    self.signal.byteReaded.emit(data)
+                        self.signal.byteReaded.emit(data)
                     flag = False
                     package = ""
             time.sleep(0.01)

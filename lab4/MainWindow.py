@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("COM-port communication 4")
-        self.setGeometry(100, 100, 800, 500)
+        self.setGeometry(100, 100, 900, 500)
 
         # Инициализация логики последовательных портов
         self.write_port = serial.Serial()
