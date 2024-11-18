@@ -4,9 +4,9 @@ import serial
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 import BitStuffing
+import constants
 import HammingCode
 import PortManager
-import constants
 
 
 class ReaderSignal(QObject):

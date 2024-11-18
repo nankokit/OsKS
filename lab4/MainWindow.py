@@ -34,10 +34,10 @@ class MainWindow(QMainWindow):
         # Инициализация логики последовательных портов
         self.write_port = serial.Serial()
         self.read_port = serial.Serial()
-        self.thread_pool_reader = QThreadPool()
-        self.thread_pool_sender = QThreadPool()
-        self.port_reader = SerialReader.SerialReader(self.read_port)
-        self.port_sender = SerialSender.SerialSender(self.write_port)
+        self.thread_pool_receiving_port = QThreadPool()
+        self.thread_pool_sending_port = QThreadPool()
+        self.receiving_port = SerialReader.SerialReader(self.read_port)
+        self.sending_port = SerialSender.SerialSender(self.write_port)
         self.bytes_sended = 0
         self.data = ""
         self.last_package = ""
@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
 
         # Подключение сигналов
         self.sending_combo.currentTextChanged.connect(self.change_sending_port)
-        self.receiving_combo.currentTextChanged.connect(self.change_received_port)
+        self.receiving_combo.currentTextChanged.connect(self.change_receiving_port)
         self.input_text.realTextEdited.connect(self.send_data)
 
         # Таймер для обновления состояния
@@ -131,22 +131,16 @@ class MainWindow(QMainWindow):
     def add_sended_bytes(self, bytes: int):
         self.bytes_sended += bytes
 
-    def set_collis_info(self, collis_info: str):
+    def get_collision(self, collis_info: str):
         self.collis_info = collis_info[:]
         self.last_collision = collis_info
 
-    def write_port_handler(self):
+    def error_sending_port(self):
         self.data = ""
         self.input_text.set_text(self.input_text.toPlainText()[: -constants.DATA_SIZE])
         QMessageBox.warning(
             self, "Warning", "This port has no receiver counterpart active"
         )
-
-    def connect_sender(self):
-        self.port_sender.signals.sendedBytes.connect(self.add_sended_bytes)
-        self.port_sender.signals.collisionInfo.connect(self.set_collis_info)
-        self.port_sender.signals.sendingError.connect(self.write_port_handler)
-        self.port_sender.signals.writeStats.connect(self.update_status)
 
     def set_box_list(self, comboBox: QComboBox, without: list):
         ports_list = PortManager.get_all_ports()
@@ -210,10 +204,10 @@ class MainWindow(QMainWindow):
         msg.setWindowTitle("Error")
         msg.exec()
 
-    def change_received_port(self, port: str):
-        self.port_reader.stop()
-        self.thread_pool_reader.waitForDone()
-        self.thread_pool_reader.clear()
+    def change_receiving_port(self, port: str):
+        self.receiving_port.stop()
+        self.thread_pool_receiving_port.waitForDone()
+        self.thread_pool_receiving_port.clear()
         self.read_port.close()
         self.clear_output()
 
@@ -231,9 +225,9 @@ class MainWindow(QMainWindow):
 
         self.read_port = PortManager.connect_to_port(port)
         self.read_port.timeout = constants.SLOT_TIME * (2**10)
-        self.port_reader = SerialReader.SerialReader(self.read_port)
-        self.port_reader.signal.byteReaded.connect(self.write_text)
-        self.thread_pool_reader.start(self.port_reader)
+        self.receiving_port = SerialReader.SerialReader(self.read_port)
+        self.receiving_port.signal.byteReaded.connect(self.write_text)
+        self.thread_pool_receiving_port.start(self.receiving_port)
 
         self.log(f"Connected to receiving port: {port}")
         self.update_ports()
@@ -242,11 +236,17 @@ class MainWindow(QMainWindow):
         # Убираем надпись "Select port" если порты открыты
         self.check_ports_status()
 
+    def sending_port_connects(self):
+        self.sending_port.signals.sendedBytes.connect(self.add_sended_bytes)
+        self.sending_port.signals.getCollision.connect(self.get_collision)
+        self.sending_port.signals.sendingError.connect(self.error_sending_port)
+        self.sending_port.signals.updateStatus.connect(self.update_status)
+
     def change_sending_port(self, port: str):
         self.clear_input()
-        self.port_sender.stop()
-        self.thread_pool_sender.waitForDone()
-        self.thread_pool_sender.clear()
+        self.sending_port.stop()
+        self.thread_pool_sending_port.waitForDone()
+        self.thread_pool_sending_port.clear()
         self.write_port.close()
 
         if PortManager.connect_to_port(port).port is None:
@@ -265,9 +265,9 @@ class MainWindow(QMainWindow):
         self.input_text.setEnabled(True)
         self.write_port = PortManager.connect_to_port(port)
         self.write_port.write_timeout = 0.1
-        self.port_sender = SerialSender.SerialSender(self.write_port)
-        self.connect_sender()
-        self.thread_pool_sender.start(self.port_sender)
+        self.sending_port = SerialSender.SerialSender(self.write_port)
+        self.sending_port_connects()
+        self.thread_pool_sending_port.start(self.sending_port)
         self.log(f"Connected to sending port: {port}")
         self.update_ports()
         self.update_status()
@@ -286,7 +286,7 @@ class MainWindow(QMainWindow):
     def send_data(self, str: str):
         self.data += str[-1:]
         if len(self.data) == constants.DATA_SIZE:
-            self.port_sender.push_data(self.data)
+            self.sending_port.push_data(self.data)
             package = BitStuffing.packaging(data=self.data, port=self.write_port.port)
             package = BitStuffing.bit_stuffing(package)
             self.log(f"Sent: {package}")

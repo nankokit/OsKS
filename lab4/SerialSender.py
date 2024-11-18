@@ -4,14 +4,14 @@ from collections import deque
 import serial
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
-import PortManager
 import BitStuffing
+import PortManager
 
 
 class SenderSignals(QObject):
     sendedBytes = Signal(int)
-    collisionInfo = Signal(str)
-    writeStats = Signal()
+    getCollision = Signal(str)
+    updateStatus = Signal()
     sendingError = Signal()
 
 
@@ -37,8 +37,8 @@ class SerialSender(QRunnable):
         while self.running:
             if len(self.queue) != 0:
                 package = ""
-                collis_info = ""
-                collis_info_bit = ""
+                collision = ""
+                sended_byte = ""
                 bytes_sended = 0
                 data = self.queue.popleft()
                 package = BitStuffing.packaging(data, self.port.port)
@@ -47,15 +47,15 @@ class SerialSender(QRunnable):
                 print("sended + bitstuffed: " + package)
                 try:
                     for bit in package:
-                        collis_info_bit = PortManager.send_byte(self.port, bit)
-                        if collis_info_bit != ("!" * 10):
+                        sended_byte = PortManager.send_bit(self.port, bit)
+                        if sended_byte != ("!" * 10):
                             bytes_sended += 1
-                        if collis_info:
-                            collis_info += " "
-                        collis_info += collis_info_bit
+                        if collision:
+                            collision += " "
+                        collision += sended_byte
                     self.signals.sendedBytes.emit(bytes_sended)
-                    self.signals.collisionInfo.emit(collis_info)
-                    self.signals.writeStats.emit()
+                    self.signals.getCollision.emit(collision)
+                    self.signals.updateStatus.emit()
                 except:
                     self.signals.sendingError.emit()
             else:

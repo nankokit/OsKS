@@ -32,23 +32,23 @@ def connect_to_port(port: str):
         return serial.Serial()
 
 
-# def send_byte(port: serial.Serial, byte: str):
-#     port.write(byte.encode())
+def send_byte(port: serial.Serial, byte: str):
+    port.write(byte.encode())
 
 
-# def get_byte(port: serial.Serial):
-#     str = b""
-#     try:
-#         while True:
-#             str += port.read()
-#             try:
-#                 str.decode()
-#                 break
-#             except:
-#                 pass
-#         return str.decode()
-#     except:
-#         pass
+def get_byte(port: serial.Serial):
+    str = b""
+    try:
+        while True:
+            str += port.read()
+            try:
+                str.decode()
+                break
+            except:
+                pass
+        return str.decode()
+    except:
+        pass
 
 
 def send_package(port: serial.Serial, package: str):
@@ -62,7 +62,7 @@ def get_package(port: serial.Serial):
         return None
 
 
-def send_byte(port: serial.Serial, bit: str):
+def send_bit(port: serial.Serial, bit: str):
     collis_info = ""
     attempt_count = 0
     while True:
@@ -86,7 +86,7 @@ def send_byte(port: serial.Serial, bit: str):
     return collis_info
 
 
-def get_byte(port: serial.Serial):
+def get_bit(port: serial.Serial):
     try:
         return port.read().decode()
     except:
