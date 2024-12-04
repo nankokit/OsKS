@@ -38,8 +38,8 @@ class SerialSender(QRunnable):
             if len(self.queue) != 0:
                 package = ""
                 collision = ""
-                sended_byte = ""
-                bytes_sended = 0
+                sended_bit = ""
+                bits_sended = 0
                 data = self.queue.popleft()
                 package = BitStuffing.packaging(data, self.port.port)
                 print("sended: " + package)
@@ -47,13 +47,13 @@ class SerialSender(QRunnable):
                 print("sended + bitstuffed: " + package)
                 try:
                     for bit in package:
-                        sended_byte = PortManager.send_bit(self.port, bit)
-                        if sended_byte != ("!" * 10):
-                            bytes_sended += 1
+                        sended_bit = PortManager.send_bit(self.port, bit)
+                        if sended_bit != ("!" * 10):
+                            bits_sended += 1
                         if collision:
                             collision += " "
-                        collision += sended_byte
-                    self.signals.sendedBytes.emit(bytes_sended)
+                        collision += sended_bit
+                    self.signals.sendedBytes.emit(bits_sended)
                     self.signals.getCollision.emit(collision)
                     self.signals.updateStatus.emit()
                 except:
